@@ -51,7 +51,7 @@ $('.masu').click(function(){
             if(flagkazu > 0){
                 $('#'+jikkoumasu).addClass('flag')
                 $('#'+jikkoumasu).html('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 82 100" style="height: 24px;"><path d="M 7 100 L 0 100 L 0 0 L 82 33 L 7 66 Z" fill="#FFFFFF"/></svg>')
-            flagkazu --
+                flagkazu --
             }
         }else{
             jikkoumati.push(jikkoumasu)
