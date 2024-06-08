@@ -47,10 +47,12 @@ $('.masu').click(function(){
             $('#'+jikkoumasu).removeClass('flag')
             $('#'+jikkoumasu).html('')
             flagkazu ++
-        }else if($('#flag').prop('checked') && !$('#'+jikkoumasu).hasClass('open') && flagkazu > 0){
-            $('#'+jikkoumasu).addClass('flag')
-            $('#'+jikkoumasu).html('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 82 100" style="height: 24px;"><path d="M 7 100 L 0 100 L 0 0 L 82 33 L 7 66 Z" fill="#FFFFFF"/></svg>')
+        }else if($('#flag').prop('checked') && !$('#'+jikkoumasu).hasClass('open')){
+            if(flagkazu > 0){
+                $('#'+jikkoumasu).addClass('flag')
+                $('#'+jikkoumasu).html('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 82 100" style="height: 24px;"><path d="M 7 100 L 0 100 L 0 0 L 82 33 L 7 66 Z" fill="#FFFFFF"/></svg>')
             flagkazu --
+            }
         }else{
             jikkoumati.push(jikkoumasu)
             while (jikkoumati.length > 0){
