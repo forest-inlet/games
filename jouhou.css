@@ -1,0 +1,57 @@
+@charset "UTF-8";
+
+.waku,.howto,.update {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-block !important;
+    white-space: nowrap !important;
+    font-size: 24px !important;
+}
+.icon{
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-block !important;
+    white-space: nowrap !important;
+    font-size: 36px !important;
+}
+#sotowaku{
+    position: fixed !important;
+    right: 30px !important;
+    top: 30px !important;
+}
+.waku {
+    height: 54px !important;
+    width: 54px !important;
+    border: 1px solid black !important;
+    border-radius: 27px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    transition: width 0.5s ease-in-out !important;
+}
+.icon {
+    height: 54px !important;
+    width: 54px !important;
+    border: 1px solid black !important;
+    border-radius: 27px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+.update,.howto {
+    width: 0 !important;
+    overflow: hidden !important;
+    transition: width 0.5s ease-in-out !important;
+    display: inline-block !important;
+}
+.waku.updatewaku:hover{
+    width: 230px !important;
+}
+.waku.howtowaku:hover{
+    width: 235px !important;
+}
+.waku:hover .update {
+    width: 165px !important;
+}
+.waku:hover .howto {
+    width: 195px !important;
+}
