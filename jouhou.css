@@ -1,11 +1,17 @@
 @charset "UTF-8";
 
+@font-face {
+    font-family: number;
+    src: url('TsunagiGothic.ttf');
+}
+
 .waku,.howto,.update {
     margin: 0 !important;
     padding: 0 !important;
     display: inline-block !important;
     white-space: nowrap !important;
     font-size: 24px !important;
+    font-family: number !important;
 }
 .icon{
     margin: 0 !important;
