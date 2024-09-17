@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>3D tameshi</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        #tools{
+            position: absolute;
+            width: 40px;
+            text-align: center;
+            border: 1px solid black;
+            border-radius: 20px;
+            left: 5px;
+            top: 30%;
+        }
+        label, span.icon{
+            display: inline-block;
+            height: 40px;
+            width: 30px;
+            position: relative;
+        }
+        img{
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 30px;
+            height: 30px;
+            top: 5px;
+        }
+        img.do{
+            border-radius: 50%;
+            background-color: #ffff;
+            transition: background 0.25s ease-in-out;
+        }
+        img.do:hover{
+            background-color: #ddd;
+        }
+        div#sousa{
+            text-align: center;
+            width: 100%;
+            height: 4%;
+            position: absolute;
+            top: 0.5%;
+            background-color: #bcfdff;
+        }
+        button{
+            margin: 0.1% 1%;
+            height: 90%;
+        }
+        img#start_flag{
+            position: fixed;
+            height: 4%;
+            width: auto;
+            top: 10%;
+            left: 10%;
+        }
+        div#waku {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas#root {
+            width: 90%;
+            height: 90%;
+            border: 1px solid black;
+        }
+        .on{
+            display: none;
+        }
+        input[type="checkbox"]{
+            width: 0;
+            height: 0;
+        }
+        input[type="checkbox"]:checked ~ .off{
+            display: none;
+        }
+        input[type="checkbox"]:checked ~ .on{
+            display: inline;
+        }
+        canvas#byouga{
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+    <div id="sousa">
+        <span>
+            <button id="modoru" style="display: none;">＜戻る</button>
+            <span id="setumei">ペンで道を描いてください</span>
+            <button id="susumu">次へ＞</button>
+        </span>
+        <span id="debug"></span>
+    </div>
+    <img id="start_flag" src="start_flag.png" style="display: none;">
+    <div id="waku">
+        <canvas id="root"></canvas>
+    </div>
+    <div id="tools">
+        <span class="icon">
+            <img src="undo.png" alt="undo" id="undo" class="do">
+        </span>
+        <span class="icon">
+            <img src="redo.png" alt="redo" id="redo" class="do">
+        </span>
+        <hr>
+        <label>
+            <input type="checkbox" id="jougi" class="tool">
+            <img src="jougi_off.png" alt="定規オフ" class="off">
+            <img src="jougi_on.png" alt="定規オン" class="on">
+        </label>
+        <hr>
+        <label>
+            <input type="checkbox" id="pen" class="pen">
+            <img src="tegaki_off.png" alt="ペンオフ" class="off">
+            <img src="tegaki_on.png" alt="ペンオン" class="on">
+        </label>
+        <label>
+            <input type="checkbox" id="eraser" class="pen">
+            <img src="kesigomu_off.png" alt="消しゴムオフ" class="off">
+            <img src="kesigomu_on.png" alt="消しゴムオン" class="on">
+        </label>
+    </div>
+    <canvas id="byouga" style="display: none;"></canvas>
+    <script>
+        const draw_canvas = document.getElementById('root')
+        const $draw_canvas = $('#root')
+        const draw_ctx = draw_canvas.getContext('2d')
+        const jikkou_canvas = document.getElementById('byouga')
+        const $jikkou_canvas = $('#byouga')
+        const jikkou_ctx = jikkou_canvas.getContext('2d')
+        const $start_flag = $('#start_flag')
+        let pressing = false
+        let draw_kari = []
+        let draw_all = []
+        let draw_redo = []
+        let scene = 1
+        let window_width = window.innerWidth
+        let window_height = window.innerHeight
+        let start_x, start_y
+        let flag_left_percent = 0.1
+        let flag_top_percent = 0.1
+        let player_x, player_y, player_direction
+        let press_key = {
+            arrowup: false,
+            arrowright: false,
+            arrowdown: false,
+            arrowleft: false,
+            w: false,
+            d: false,
+            s: false,
+            a: false
+        }
+        let animationID
+        let shiya = Math.floor((window_width / window_height) / (240 / 180) * 48)
+        let sen_haba = window_width / (shiya * 2)
+        let sen_tyuushin = sen_haba / 2
+        let kabe_zahyou = []
+
+        function draw_resize (canvas_id) {
+            window_width = window.innerWidth
+            window_height = window.innerHeight
+            $('canvas#' + canvas_id).attr('width',window_width).attr('height',window_height)
+            canvas_reset()
+        }
+        draw_resize('root')
+        $(window).resize(()=>{draw_resize('root')})
+        change_scene()
+
+        function canvas_reset() {
+            draw_ctx.fillStyle = 'white'
+            draw_ctx.fillRect(-100,-100,window_width + 100,window_height + 100)
+        }
+
+        draw_resize('byouga')
+
+        $('input.pen, input.tool').change(function(){
+            let className = $(this).attr('class')
+            $('.' + className).not(this).prop('checked',false)
+        })
+
+        $('button#susumu').click(()=>{
+            scene ++
+            change_scene()
+        })
+
+        $('button#modoru').click(()=>{
+            scene --
+            change_scene()
+        })
+
+        function animate() {
+            byouga_key_junction()
+            animationID = requestAnimationFrame(animate)
+        }
+
+        async function change_scene(){
+            switch (scene) {
+                case 1:
+                    $('button#modoru').hide()
+                    $('#tools').show()
+                    $start_flag.hide()
+                    $('#setumei').text('ペンで道を描いてください')
+                    $draw_canvas.on('mousedown touchstart', start_draw)
+                    $draw_canvas.on('mousemove touchmove', move_draw)
+                    $(window).on('mouseup touchend', end_draw)
+                    $(document).off('keydown')
+                    break;
+                case 2:
+                    $('button#modoru').show()
+                    $('button#susumu').show()
+                    $start_flag.show()
+                    $('#tools').hide()
+                    $jikkou_canvas.hide()
+                    $('#setumei').text('旗を矢印キーまたはWASDキーで動かし、スタート地点を決めてください')
+                    $draw_canvas.off('mousedown touchstart mousemove touchmove')
+                    $(window).off('mouseup touchend keydown keyup')
+                    $(document).on('keydown', move_flag)
+                    if (animationID) {
+                        cancelAnimationFrame(animationID)
+                    }
+                    break;
+                case 3:
+                    if (await start_kenti()) {
+                        $jikkou_canvas.show()
+                        $('button#susumu').hide()
+                        $start_flag.hide()
+                        $draw_canvas.hide()
+                        $('#setumei').text('矢印キーまたはWASDキーで移動します')
+                        $(document).off('keydown')
+                        player_x = start_x
+                        player_y = start_y
+                        player_direction = 0
+                        $(document).on('keydown', key_press)
+                        $(document).on('keyup', key_release)
+                        animationID = requestAnimationFrame(animate)
+                    } else {
+                        scene = 2
+                    }
+                    break;
+            }
+        }
+
+        function start_draw(e){
+            e.preventDefault()
+            pressing = true
+            let {offsetX, offsetY} = get_zahyou(e)
+            offsetX /= 0.9
+            offsetY /= 0.9
+            draw_ctx.beginPath()
+            draw_ctx.lineWidth = 25
+            draw_ctx.lineCap = 'round'
+            if ($('#pen').prop('checked')) {
+                draw_ctx.strokeStyle = 'black'
+                if ($('#jougi').prop('checked')) {
+                    draw_kari.push(['L','P',offsetX,offsetY])
+                    draw_ctx.moveTo(offsetX,offsetY)
+                } else {
+                    draw_all.push(['F','P',offsetX,offsetY,[]])
+                    draw_ctx.moveTo(offsetX,offsetY)
+                }
+            } else if ($('#eraser').prop('checked')) {
+                draw_ctx.strokeStyle = 'white'
+                if ($('#jougi').prop('checked')) {
+                    draw_kari.push(['L','E',offsetX,offsetY,[]])
+                    draw_ctx.moveTo(offsetX,offsetY)
+                } else if ($('#pen').prop('checked') || $('#eraser').prop('checked')) {
+                    draw_all.push(['F','E',offsetX,offsetY,[]])
+                    draw_ctx.moveTo(offsetX,offsetY)
+                }
+            }
+        }
+
+        function move_draw(e) {
+            e.preventDefault()
+            if (pressing) {
+                let {offsetX, offsetY} = get_zahyou(e)
+                offsetX /= 0.9
+                offsetY /= 0.9
+                if ($('#jougi').prop('checked')) {
+
+                } else if ($('#pen').prop('checked') || $('#eraser').prop('checked')) {
+                    draw_all[draw_all.length - 1][4].push(offsetX,offsetY)
+                    draw_ctx.lineTo(offsetX,offsetY)
+                    draw_ctx.stroke()
+                }
+            }
+        }
+
+        function end_draw(e){
+            if (pressing) {
+                let {offsetX,offsetY} = get_zahyou(e)
+                offsetX /= 0.9
+                offsetY /= 0.9
+                if ($('#pen').prop('checked') || $('#eraser').prop('checked') && !$('#jougi').prop('checked')) {
+                    draw_all[draw_all.length - 1][4].push(offsetX,offsetY)
+                    draw_ctx.lineTo(offsetX,offsetY)
+                    draw_ctx.stroke()
+                }
+            }
+            pressing = false
+        }
+
+        function move_flag(e) {
+            e.preventDefault()
+            if (e.key === 'ArrowUp' || e.key === 'w') {
+                if (e.shiftKey) {
+                    flag_top_percent -= 0.01
+                } else {
+                    flag_top_percent -= 0.001
+                }
+                if (flag_top_percent < 0.01) {
+                    flag_top_percent = 0.01
+                }
+                $start_flag.css('top', `${flag_top_percent * 100}%`)
+            } else if (e.key === 'ArrowRight' || e.key === 'd') {
+                if (e.shiftKey) {
+                    flag_left_percent += 0.01
+                } else {
+                    flag_left_percent += 0.001
+                }
+                if (flag_left_percent > 0.95) {
+                    flag_left_percent = 0.95
+                }
+                $start_flag.css('left', `${flag_left_percent * 100}%`)
+            } else if (e.key === 'ArrowDown' || e.key === 's') {
+                if (e.shiftKey) {
+                    flag_top_percent += 0.01
+                } else {
+                    flag_top_percent += 0.001
+                }
+                if (flag_top_percent > 0.91) {
+                    flag_top_percent = 0.91
+                }
+                $start_flag.css('top', `${flag_top_percent * 100}%`)
+            } else if (e.key === 'ArrowLeft' || e.key === 'a') {
+                if (e.shiftKey) {
+                    flag_left_percent -= 0.01
+                } else {
+                    flag_left_percent -= 0.001
+                }
+                if (flag_left_percent < 0.05) {
+                    flag_left_percent = 0.05
+                }
+                $start_flag.css('left', `${flag_left_percent * 100}%`)
+            }
+        }
+
+        function start_kenti() {
+            start_x = ((flag_left_percent - 0.05) / 0.9) * window_width
+            start_y = ((flag_top_percent - 0.01) / 0.9) * window_height
+            const data = draw_ctx.getImageData(start_x,start_y,1,1).data
+            if (data[0] + data[1] + data[2] === 0) {
+                return true
+            } else {
+                return false
+            }
+        }
+
+        function key_press(e) {
+            let key = e.key.toLowerCase()
+            if (key in press_key) {
+                press_key[key] = true
+            }
+        }
+
+        function key_release(e) {
+            let key = e.key.toLowerCase()
+            if (key in press_key) {
+                press_key[key] = false
+            }
+        }
+
+        async function byouga_key_junction() {
+            let move_x, move_y
+            if (press_key.a || press_key.arrowleft) {
+                player_direction --
+                await byouga_sokuryou()
+                await byouga_byouga()
+            }
+            if (press_key.d || press_key.arrowright) {
+                player_direction ++
+                await byouga_sokuryou()
+                await byouga_byouga()
+            }
+            if (press_key.w || press_key.arrowup) {
+                let {move_x, move_y} = susumu(player_x,player_y,player_direction)
+                if (color_hantei(move_x,move_y)) {
+                    player_x = move_x
+                    player_y = move_y
+                    await byouga_sokuryou()
+                    await byouga_byouga()
+                }
+            }
+            if (press_key.s || press_key.arrowdown) {
+                let {move_x, move_y} = susumu(player_x,player_y,player_direction,-1)
+                if (color_hantei(move_x,move_y)) {
+                    player_x = move_x
+                    player_y = move_y
+                    await byouga_sokuryou()
+                    await byouga_byouga()
+                }
+            }
+            $('#debug').text(`derection:${Math.floor(player_direction)},x:${Math.floor(player_x)},y:${Math.floor(player_y)}`)
+        }
+
+        function byouga_sokuryou() {
+            kabe_zahyou = []
+            for (let sokuryou_soutai_direction = - shiya; sokuryou_soutai_direction <= shiya; sokuryou_soutai_direction++) {
+                let sokuryou_x = player_x
+                let sokuryou_y = player_y
+                let sokuryou_zettai_direction = player_direction + sokuryou_soutai_direction
+                let distance = 0
+                while (color_hantei(sokuryou_x,sokuryou_y) && distance < 100) {
+                    let {move_x, move_y} = susumu(sokuryou_x,sokuryou_y,sokuryou_zettai_direction)
+                    sokuryou_x = move_x
+                    sokuryou_y = move_y
+                    distance ++
+                }
+                kabe_zahyou.push(distance)
+            }
+        }
+        
+        function byouga_byouga() {
+            jikkou_ctx.clearRect(0,0,window_width,window_height)
+            jikkou_ctx.beginPath()
+            jikkou_ctx.lineWidth = sen_haba
+            for (let number = 0; number < kabe_zahyou.length; number++) {
+                let h = 0.5 + kabe_zahyou[number] * 0.5 / 100
+                let color = hsv2rgb(h,0.5,0.5)
+                jikkou_ctx.strokeStyle = `rgb(${Math.round(color.r)},${Math.round(color.g)},${Math.round(color.b)})`
+                jikkou_ctx.moveTo(sen_haba * number + sen_tyuushin, ((window_height / 2) - 12000) / kabe_zahyou[number] + window_height / 2)
+                jikkou_ctx.lineTo(sen_haba * number + sen_tyuushin, ((window_height / 2) + 12000) / kabe_zahyou[number] + window_height / 2)
+            }
+            jikkou_ctx.stroke()
+        }
+
+        function color_hantei(x = player_x,y = player_y,R = 0,G = 0,B = 0,A = 255) {
+            let color_data = draw_ctx.getImageData(x,y,1,1).data
+            if (color_data[0] === R && color_data[1] === G && color_data[2] === B && color_data[3] === A) {
+                return true
+            } else {
+                return false
+            }
+        }
+
+        function susumu(x,y,direction,distance = 1) {
+            let move_x = Math.cos(direction * Math.PI / 180) * distance
+            let move_y = Math.sin(direction * Math.PI / 180) * distance
+            x += move_x
+            y += move_y
+            return {move_x: x, move_y: y}
+        }
+
+        function hsv2rgb(h, s, v) {
+            let r, g, b
+
+            const i = Math.floor(h * 6)
+            const f = h * 6 - i
+            const p = v * (1 - s)
+            const q = v * (1 - f * s)
+            const t = v * (1 - (1 - f) * s)
+
+            switch (i % 6) {
+                case 0: r = v; g = t; b = p; break;
+                case 1: r = q; g = v; b = p; break;
+                case 2: r = p; g = v; b = t; break;
+                case 3: r = p; g = q; b = v; break;
+                case 4: r = t; g = p; b = v; break;
+                case 5: r = v; g = p; b = q; break;
+            }
+
+            return {r: r * 255, g: g * 255, b: b * 255}
+        }
+
+
+        function get_zahyou(e) {
+            if (e.type.startsWith('touch')) {
+                const touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0]
+                const rect = e.target.getBoundingClientRect()
+                return { offsetX: (touch.pageX - rect.left), offsetY: (touch.pageY - rect.top)}
+            } else {
+                const rect = e.target.getBoundingClientRect()
+                return { offsetX: (e.pageX - rect.left), offsetY: (e.pageY - rect.top)}
+            }
+        }
+    </script>
+</body>
+</html>
