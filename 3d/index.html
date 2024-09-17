@@ -435,12 +435,12 @@
             jikkou_ctx.lineWidth = sen_haba
             for (let number = 0; number < kabe_zahyou.length; number++) {
                 let h = 0.5 + kabe_zahyou[number] * 0.5 / 100
-                let color = hsv2rgb(h,0.5,0.5)
+                let color = hsv2rgb(0.5,h,0.5)
                 jikkou_ctx.strokeStyle = `rgb(${Math.round(color.r)},${Math.round(color.g)},${Math.round(color.b)})`
                 jikkou_ctx.moveTo(sen_haba * number + sen_tyuushin, ((window_height / 2) - 12000) / kabe_zahyou[number] + window_height / 2)
                 jikkou_ctx.lineTo(sen_haba * number + sen_tyuushin, ((window_height / 2) + 12000) / kabe_zahyou[number] + window_height / 2)
+                jikkou_ctx.stroke()
             }
-            jikkou_ctx.stroke()
         }
 
         function color_hantei(x = player_x,y = player_y,R = 0,G = 0,B = 0,A = 255) {
