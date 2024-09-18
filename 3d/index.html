@@ -46,6 +46,7 @@
             position: absolute;
             top: 0.5%;
             background-color: #bcfdff;
+            z-index: 3;
         }
         button{
             margin: 0.1% 1%;
@@ -217,6 +218,7 @@
                 case 2:
                     $('button#modoru').show()
                     $('button#susumu').show()
+                    $draw_canvas.show()
                     $start_flag.show()
                     $('#tools').hide()
                     $jikkou_canvas.hide()
@@ -239,6 +241,8 @@
                         player_x = start_x
                         player_y = start_y
                         player_direction = 0
+                        await byouga_sokuryou()
+                        byouga_byouga()
                         $(document).on('keydown', key_press)
                         $(document).on('keyup', key_release)
                         animationID = requestAnimationFrame(animate)
@@ -419,7 +423,7 @@
                 let sokuryou_y = player_y
                 let sokuryou_zettai_direction = player_direction + sokuryou_soutai_direction
                 let distance = 0
-                while (color_hantei(sokuryou_x,sokuryou_y) && distance < 100) {
+                while (color_hantei(sokuryou_x,sokuryou_y) && distance < 150) {
                     let {move_x, move_y} = susumu(sokuryou_x,sokuryou_y,sokuryou_zettai_direction)
                     sokuryou_x = move_x
                     sokuryou_y = move_y
@@ -431,11 +435,11 @@
         
         function byouga_byouga() {
             jikkou_ctx.clearRect(0,0,window_width,window_height)
-            jikkou_ctx.beginPath()
-            jikkou_ctx.lineWidth = sen_haba
             for (let number = 0; number < kabe_zahyou.length; number++) {
-                let h = 0.5 + kabe_zahyou[number] * 0.5 / 100
-                let color = hsv2rgb(0.5,h,0.5)
+                jikkou_ctx.beginPath()
+                jikkou_ctx.lineWidth = sen_haba
+                let h = 0.5 + kabe_zahyou[number] * 0.5 / 150
+                let color = hsv2rgb(0.5,1.01 - h,1)
                 jikkou_ctx.strokeStyle = `rgb(${Math.round(color.r)},${Math.round(color.g)},${Math.round(color.b)})`
                 jikkou_ctx.moveTo(sen_haba * number + sen_tyuushin, ((window_height / 2) - 12000) / kabe_zahyou[number] + window_height / 2)
                 jikkou_ctx.lineTo(sen_haba * number + sen_tyuushin, ((window_height / 2) + 12000) / kabe_zahyou[number] + window_height / 2)
