@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>古語単語</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        input[type="number"]{
+            width: 50px;
+        }
+        div#windowLogin, div#windowTouroku, div#mondai, div#account, div#withGoogleTouroku, div#kekka{
+            display: none;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
+    <script src="./kogo_data.js"></script>
+</head>
+<body>
+    <div id="windowLogin">
+        ログイン
+        <br>
+        メールアドレス：<input type="email" id="loginMail">
+        <br>
+        パスワード：<input type="password" id="loginPass">
+        <br>
+        <button class="google">googleアカウントでログイン</button>
+        <br>
+        <button class="cancel">キャンセル</button>
+        <button id="sendLogin">ログイン</button>
+    </div>
+    <div id="windowTouroku">
+        登録
+        <br>
+        メールアドレス：<input type="email" id="tourokuMail">
+        <br>
+        パスワード：<input type="password" id="tourokuPass">
+        <br>
+        パスワード(再入力)：<input type="password" id="tourokuRePass">
+        <br>
+        ユーザーネーム：<input type="text" id="userName">
+        <br>
+        <button class="google">googleアカウントで登録</button>
+        <br>
+        <button class="cancel">キャンセル</button>
+        <button id="sendTouroku">登録</button>
+    </div>
+    <div id="withGoogleTouroku">
+        ユーザー名：<input type="text" id="googleName">
+        <button id="googleSettei">登録</button>
+    </div>
+    <div id="settei">
+        <div id="mode">
+            出題モード
+            <div>
+                <label>
+                    <input type="radio" id="toImi" name="mode" checked>
+                    古語→意味
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="radio" id="toKogo" name="mode">
+                    意味→古語
+                </label>
+            </div>
+        </div>
+        <br>
+        <div id="type">
+            出題方法
+            <div>
+                <label>
+                    <input type="radio" id="randomAll" name="type" checked>
+                    すべてをランダムで出題
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="radio" id="randomX" name="type">
+                    ランダムで指定の数出題
+                </label>
+                <input type="number" id="kaisuu" disabled value="10" min="1" max="69" onchange="if ($(this).val()>69) {
+                    $(this).val(69)
+                }
+                if ($(this).val()<1) {
+                    $(this).val(1)
+                }">
+            </div>
+        </div>
+        <button id="start" style="margin-bottom: 10px;">スタート</button>
+        <hr>
+        <div id="user" style="margin-top: 10px;">
+            <button id="login">ログイン</button>
+            <button id="touroku">登録</button>
+        </div>
+        <div id="account">
+            ユーザー名：<span id="name"></span>
+            <button id="logout">ログアウト</button>
+        </div>
+    </div>
+    <div id="mondai">
+        <div id="toi"></div>
+        <div id="sentaku1"></div>
+        <div id="sentaku2"></div>
+        <div id="sentaku3"></div>
+        <button id="1"></button>
+        <button id="2"></button>
+        <button id="3"></button>
+    </div>
+    <div id="kekka">
+        <span id="seitou"></span>/<span id="all"></span>問正解でした
+        <br>
+        <button id="shuuryou">ホームへ</button>
+    </div>
+    <script>
+        let uid, name
+
+        //firebaseの設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyAEs5cxcElZpvt6UMeMgur_bi7RSmvS9ro",
+            authDomain: "user-data-forestinlet.firebaseapp.com",
+            databaseURL: "https://user-data-forestinlet-default-rtdb.firebaseio.com",
+            projectId: "user-data-forestinlet",
+            storageBucket: "user-data-forestinlet.appspot.com",
+            messagingSenderId: "620374676064",
+            appId: "1:620374676064:web:e815cfe3d09ffc109aa905"
+        }
+        const app = firebase.initializeApp(firebaseConfig)
+        const database = firebase.database()
+        const auth = firebase.auth()
+        const provider = new firebase.auth.GoogleAuthProvider()
+        const touroku = async (email, password) => {
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password)
+                // 登録成功時
+                const user = userCredential.user
+                return userCredential.user.uid
+            } catch (error) {
+                alert('エラーが発生しました')
+            }
+        }
+
+        const login = async (email, password) => {
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password)
+                // ログイン成功時
+                const user = userCredential.user
+                return userCredential.user.uid
+            } catch (error) {
+                alert('エラーが発生しました')
+            }
+        }
+
+        const loginWithGoogle = async () => {
+            try {
+                // Google認証ポップアップを表示してサインイン
+                const result = await firebase.auth().signInWithPopup(provider)    
+                // ログイン成功時、userオブジェクトからuidを取得
+                return result.user.uid
+            } catch (error) {
+                alert('エラーが発生しました：'+error)
+            }
+        }
+
+        const logOut = async () => {
+            try {
+                await auth.signOut()
+                uid = null
+                alert('ログアウトに成功しました')
+            } catch (error) {
+                alert('エラーが発生しました')
+            }
+        };
+
+        $('button#login').on('click', function() {
+            $('div#windowLogin').show()
+            $('div#settei').hide()
+        })
+
+        $('button#touroku').on('click', function() {
+            $('div#windowTouroku').show()
+            $('div#settei').hide()
+        })
+
+        $('button#logout').on('click', async function() {
+            await logOut()
+            $('div#user').show()
+            $('div#account').hide()
+        })
+
+        $('button.cancel').on('click', function() {
+            $('div#windowLogin').hide()
+            $('div#windowTouroku').hide()
+            $('div#settei').show()
+        })
+
+        $('button#sendLogin').on('click', async function() {
+            let email = $('input#loginMail').val()
+            let pass = $('input#loginPass').val()
+            if (email.trim() !== '' && pass.trim() !== '' && isEmail(email)) {
+                uid = await login(email, pass)
+                $('button.cancel').click()
+                alert('ログインに成功しました')
+                $('div#user').hide()
+                $('div#account').show()
+                await database.ref(`${uid}/name`).once('value').then((snapshot) => {
+                    name = snapshot.val()
+                })
+                $('span#name').text(name)
+            }
+        })
+
+        $('button#sendTouroku').on('click', async function() {
+            let email = $('input#tourokuMail').val()
+            let pass1 = $('input#tourokuPass').val()
+            let pass2 = $('input#tourokuRePass').val()
+            let userName = $('input#userName').val()
+            if (email.trim() !== '' && pass1.trim() !== '' && pass2.trim() !== '' && pass1 === pass2 && userName.trim() !== '' && isEmail(email)) {
+                uid = await touroku(email, pass1)
+                let updates = {name: userName}
+                database.ref(uid).update(updates)
+                $('button.cancel').click()
+                alert('登録に成功しました')
+                $('div#user').hide()
+                $('div#account').show()
+                name = userName
+                $('span#name').text(name)
+            }
+        })
+
+        $('button.google').on('click', async function() {
+            uid = await loginWithGoogle()
+            let data = await database.ref(`${uid}/name`).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    name = snapshot.val()
+                    $('span#name').text(name)
+                    $('button.cancel').click()
+                    $('div#user').hide()
+                    $('div#account').show()
+                    alert('ログインに成功しました')
+                } else {
+                    $('div#windowLogin').hide()
+                    $('div#windowTouroku').hide()
+                    $('div#withGoogleTouroku').show()
+                    alert('登録に成功しました\nユーザー名を登録してください')
+                }
+            })
+        })
+
+        $('button#googleSettei').on('click', function() {
+            let userName = $('input#googleName').val()
+            if (userName.trim() !== '') {
+                let updates = {name: userName}
+                database.ref(uid).update(updates)
+                name = userName
+                $('span#name').text(name)
+                $('div#withGoogleTouroku').hide()
+                $('div#user').hide()
+                $('div#account').show()
+                $('button.cancel').click()
+                alert('登録に成功しました')
+            }
+        })
+
+        function isEmail(email) {
+            const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+            return regex.test(email)
+        }
+
+        let mode, type, kaisuu, shutudaizumi, toi, kai, correctAnswer, seitou
+
+        $('input#randomX').on('change', function() {
+            if ($(this).is(':checked')) {
+                $('input#kaisuu').prop('disabled', false)
+            } else {
+                $('input#kaisuu').prop('disabled', true)
+            }
+        })
+
+        $('button#start').on('click', function() {
+            mode = $('input[name="mode"]:checked').prop('id')
+            type = $('input[name="type"]:checked').prop('id')
+            seitou = 0
+            if (type == 'randomX') {
+                kaisuu = $('input#kaisuu').val()
+            } else {
+                kaisuu = 70
+            }
+            if (mode == 'toImi') {
+                toi = 0
+                kai = 1
+            } else {
+                toi = 1
+                kai = 0
+            }
+            shutudaizumi = []
+            $('div#settei').hide()
+            $('div#user').hide()
+            $('div#account').hide()
+            $('div#mondai').show()
+            shutudai()
+        })
+
+        $('button#shuuryou').on('click', function() {
+            $('div#settei').show()
+            $('div#kekka').hide()
+            if (uid == null) {
+                $('div#user').show()
+            } else {
+                $('div#account').show()
+            }
+        })
+
+        function shutudai() {
+            if (shutudaizumi.length >= kaisuu) {
+                $('div#mondai').hide()
+                $('div#kekka').show()
+                $('span#seitou').text(seitou)
+                $('span#all').text(kaisuu)
+            }
+    
+            // ランダムに問題を選ぶが、既に出題済みの問題は除く
+            let toiNumber;
+            do {
+                toiNumber = Math.floor(Math.random() * data.length);
+            } while (shutudaizumi.includes(toiNumber));
+    
+            shutudaizumi.push(toiNumber);  // 出題済みリストに追加
+    
+            let toiNaiyou = data[toiNumber][toi];  // 出題する古語または意味
+            correctAnswer = data[toiNumber][kai];  // 正解の意味または古語
+    
+            // ランダムに間違いの選択肢を2つ選ぶ
+            let sentaku = [correctAnswer];
+            while (sentaku.length < 3) {
+                let randIndex = Math.floor(Math.random() * data.length);
+                let wrongAnswer = data[randIndex][kai];
+                if (!sentaku.includes(wrongAnswer)) {
+                    sentaku.push(wrongAnswer);
+                }
+            }
+    
+            // 選択肢をランダムに並び替える
+            sentaku.sort(() => Math.random() - 0.5);
+
+            // 問題と選択肢を表示
+            $('div#toi').text(toiNaiyou);
+            $('button#1').text(sentaku[0]);
+            $('button#2').text(sentaku[1]);
+            $('button#3').text(sentaku[2]);
+            }
+
+            // 正解か不正解かの判定
+            $('button#1, button#2, button#3').on('click', async function() {
+                let selectedAnswer = $(this).text();  // 選択したボタンのテキストを取得
+                if (selectedAnswer === correctAnswer) {
+                    alert("正解です！");
+                    seitou ++
+                } else {
+                alert("不正解です。正解は「" + correctAnswer + "」です。");
+                if (uid !== null) {
+                    await database.ref(`${uid}/kogo/${correctAnswer}`).transaction((currentValue) => {
+                        return (currentValue || 0) + 1
+                    })
+                }
+            }
+            shutudai();  // 次の問題を出題
+        });
+    </script>
+</body>
+</html>
