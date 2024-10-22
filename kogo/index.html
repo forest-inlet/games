@@ -238,7 +238,7 @@
 
         $('button.google').on('click', async function() {
             uid = await loginWithGoogle()
-            if (uid !== null) {
+            if (uid !== null || uid !== null) {
                 let data = await database.ref(`${uid}/name`).once('value').then((snapshot) => {
                     if (snapshot.exists()) {
                         name = snapshot.val()
