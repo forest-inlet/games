@@ -239,18 +239,20 @@
         $('button.google').on('click', async function() {
             uid = await loginWithGoogle()
             let data = await database.ref(`${uid}/name`).once('value').then((snapshot) => {
-                if (snapshot.exists()) {
-                    name = snapshot.val()
-                    $('span#name').text(name)
-                    $('button.cancel').click()
-                    $('div#user').hide()
-                    $('div#account').show()
-                    alert('ログインに成功しました')
-                } else {
-                    $('div#windowLogin').hide()
-                    $('div#windowTouroku').hide()
-                    $('div#withGoogleTouroku').show()
-                    alert('登録に成功しました\nユーザー名を登録してください')
+                if(uid !== null) {
+                    if (snapshot.exists()) {
+                        name = snapshot.val()
+                        $('span#name').text(name)
+                        $('button.cancel').click()
+                        $('div#user').hide()
+                        $('div#account').show()
+                        alert('ログインに成功しました')
+                    } else {
+                        $('div#windowLogin').hide()
+                        $('div#windowTouroku').hide()
+                        $('div#withGoogleTouroku').show()
+                        alert('登録に成功しました\nユーザー名を登録してください')
+                    }
                 }
             })
         })
