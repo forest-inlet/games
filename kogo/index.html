@@ -395,10 +395,13 @@
                 } else {
                 alert("不正解です。正解は「" + correctAnswer + "」です。");
                 if (uid !== null) {
-                    await database.ref(`users/${uid}/kogo/${correctAnswer}`).transaction((currentValue) => {
+                    await database.ref(`users/${uid}/kogo/${correctAnswer}/miss`).transaction((currentValue) => {
                         return (currentValue || 0) + 1
                     })
                 }
+                await database.ref(`users/${uid}/kogo/${correctAnswer}/all`).transaction((currentValue) => {
+                    return (currentValue || 0) + 1
+                })
             }
             shutudai();  // 次の問題を出題
         });
