@@ -13,8 +13,13 @@
         input[type="number"]{
             width: 50px;
         }
-        div#windowLogin, div#windowTouroku, div#mondai, div#account, div#withGoogleTouroku, div#kekka{
+        div#windowLogin, div#windowTouroku, div#mondai, div#account, div#withGoogleTouroku, div#kekka, div#update{
             display: none;
+        }
+        div#update{
+            background-color: #6464ff;
+            position: absolute;
+            top: 0;
         }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -119,9 +124,13 @@
         <br>
         <button id="shuuryou">ホームへ</button>
     </div>
+    <div id="update">
+        アップデートがあります。更新するには再読み込みしてください。<button id="reload">再読み込み</button>
+    </div>
     <script>
-        let name
+        let name, v
         let uid = null
+        let version = 1
 
         //firebaseの設定
         const firebaseConfig = {
@@ -211,7 +220,7 @@
                 alert('ログインに成功しました')
                 $('div#user').hide()
                 $('div#account').show()
-                await database.ref(`${uid}/name`).once('value').then((snapshot) => {
+                await database.ref(`users/${uid}/name`).once('value').then((snapshot) => {
                     name = snapshot.val()
                 })
                 $('span#name').text(name)
@@ -226,7 +235,7 @@
             if (email.trim() !== '' && pass1.trim() !== '' && pass2.trim() !== '' && pass1 === pass2 && userName.trim() !== '' && isEmail(email)) {
                 uid = await touroku(email, pass1)
                 let updates = {name: userName}
-                database.ref(uid).update(updates)
+                database.ref(`users/${uid}`).update(updates)
                 $('button.cancel').click()
                 alert('登録に成功しました')
                 $('div#user').hide()
@@ -238,8 +247,8 @@
 
         $('button.google').on('click', async function() {
             uid = await loginWithGoogle()
-            if (uid !== null || uid !== null) {
-                let data = await database.ref(`${uid}/name`).once('value').then((snapshot) => {
+            if (uid !== null) {
+                let data = await database.ref(`users/${uid}/name`).once('value').then((snapshot) => {
                     if (snapshot.exists()) {
                         name = snapshot.val()
                         $('span#name').text(name)
@@ -261,7 +270,7 @@
             let userName = $('input#googleName').val()
             if (userName.trim() !== '') {
                 let updates = {name: userName}
-                database.ref(uid).update(updates)
+                database.ref(`users/${uid}`).update(updates)
                 name = userName
                 $('span#name').text(name)
                 $('div#withGoogleTouroku').hide()
@@ -276,6 +285,23 @@
             const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
             return regex.test(email)
         }
+
+        database.ref('version/kogo').once('value').then(async (snapshot) => {
+            v = await snapshot.val()
+            if (v > version) {
+                $('div#update').show()
+            }
+        })
+        database.ref('version/kogo').on('child_changed', async (snapshot) => {
+            v = await snapshot.val()
+            if (v > version) {
+                $('div#update').show()
+            }
+        })
+
+        $('div#reload').on('click', function() {
+            window.location.reload()
+        })
 
         let mode, type, kaisuu, shutudaizumi, toi, kai, correctAnswer, seitou
 
@@ -369,7 +395,7 @@
                 } else {
                 alert("不正解です。正解は「" + correctAnswer + "」です。");
                 if (uid !== null) {
-                    await database.ref(`${uid}/kogo/${correctAnswer}`).transaction((currentValue) => {
+                    await database.ref(`users/${uid}/kogo/${correctAnswer}`).transaction((currentValue) => {
                         return (currentValue || 0) + 1
                     })
                 }
