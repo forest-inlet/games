@@ -247,7 +247,7 @@
 
         $('button.google').on('click', async function() {
             uid = await loginWithGoogle()
-            if (uid !== null) {
+            if (uid !== null && uid !== undefined) {
                 let data = await database.ref(`users/${uid}/name`).once('value').then((snapshot) => {
                     if (snapshot.exists()) {
                         name = snapshot.val()
@@ -303,7 +303,7 @@
             window.location.reload()
         })
 
-        let mode, type, kaisuu, shutudaizumi, toi, kai, correctAnswer, seitou
+        let mode, type, kaisuu, shutudaizumi, toi, kai, correctAnswer, seitou, toiNumber
 
         $('input#randomX').on('change', function() {
             if ($(this).is(':checked')) {
@@ -353,10 +353,10 @@
                 $('div#kekka').show()
                 $('span#seitou').text(seitou)
                 $('span#all').text(kaisuu)
+                return
             }
     
             // ランダムに問題を選ぶが、既に出題済みの問題は除く
-            let toiNumber;
             do {
                 toiNumber = Math.floor(Math.random() * data.length);
             } while (shutudaizumi.includes(toiNumber));
@@ -394,14 +394,26 @@
                     seitou ++
                 } else {
                 alert("不正解です。正解は「" + correctAnswer + "」です。");
-                if (uid !== null) {
-                    await database.ref(`users/${uid}/kogo/${correctAnswer}/miss`).transaction((currentValue) => {
+                if (uid !== null && uid !== undefined) {
+                    let to
+                    if (toi == 0) {
+                        to = 'toImi'
+                    } else {
+                        to = 'toKogo'
+                    }
+                    await database.ref(`users/${uid}/kogo/${to}/${data[toiNumber][0]}/miss`).transaction((currentValue) => {
                         return (currentValue || 0) + 1
                     })
             }
         }
-                if (uid !== null) {
-                    await database.ref(`users/${uid}/kogo/${correctAnswer}/all`).transaction((currentValue) => {
+                if (uid !== null && uid !== undefined) {
+                    let to
+                    if (toi == 0) {
+                        to = 'toImi'
+                    } else {
+                        to = 'toKogo'
+                    }
+                    await database.ref(`users/${uid}/kogo/${to}/${data[toiNumber][0]}/all`).transaction((currentValue) => {
                         return (currentValue || 0) + 1
                     })
             }
