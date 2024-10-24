@@ -18,8 +18,6 @@
         }
         div#update{
             background-color: #6464ff;
-            position: absolute;
-            top: 0;
         }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -29,6 +27,9 @@
     <script src="./kogo_data.js"></script>
 </head>
 <body>
+    <div id="update">
+        アップデートがあります。更新するには再読み込みしてください。<button id="reload">再読み込み</button>
+    </div>
     <div id="windowLogin">
         ログイン
         <br>
@@ -123,9 +124,6 @@
         <span id="seitou"></span>/<span id="all"></span>問正解でした
         <br>
         <button id="shuuryou">ホームへ</button>
-    </div>
-    <div id="update">
-        アップデートがあります。更新するには再読み込みしてください。<button id="reload">再読み込み</button>
     </div>
     <script>
         let name, v
@@ -292,14 +290,14 @@
                 $('div#update').show()
             }
         })
-        database.ref('version/kogo').on('child_changed', async (snapshot) => {
+        database.ref('version').on('child_changed', async (snapshot) => {
             v = await snapshot.val()
             if (v > version) {
                 $('div#update').show()
             }
         })
 
-        $('div#reload').on('click', function() {
+        $('button#reload').on('click', function() {
             window.location.reload()
         })
 
