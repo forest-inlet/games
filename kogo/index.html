@@ -19,6 +19,23 @@
         div#update{
             background-color: #6464ff;
         }
+        span#sotowaku{
+            text-align: left;
+            display: inline-block;
+            background-color: lightgray;
+            border-radius: 10px;
+            width: 1002px;
+            height: 20px;
+        }
+        span#nakami{
+            display: inline-block;
+            background-color: lightblue;
+            border-radius: 9px;
+            height: 18px;
+            width: 0px;
+            margin: 1px;
+            transition: width 1s ease-in-out;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
@@ -112,6 +129,12 @@
         </div>
     </div>
     <div id="mondai">
+        <div id="shintyoku">
+            <span id="sotowaku">
+                <span id="nakami"></span>
+            </span>
+            <span id="percent"></span>% (<span id="chil"></span>/<span id="mam"></span>)
+        </div>
         <div id="toi"></div>
         <div id="sentaku1"></div>
         <div id="sentaku2"></div>
@@ -301,7 +324,7 @@
             window.location.reload()
         })
 
-        let mode, type, kaisuu, shutudaizumi, toi, kai, correctAnswer, seitou, toiNumber
+        let mode, type, kaisuu, shutudaizumi, toi, kai, correctAnswer, seitou, toiNumber, percent, chil, mam
 
         $('input#randomX').on('change', function() {
             if ($(this).is(':checked')) {
@@ -328,10 +351,16 @@
                 kai = 0
             }
             shutudaizumi = []
+            mam = kaisuu
+            chil = 0
             $('div#settei').hide()
             $('div#user').hide()
             $('div#account').hide()
             $('div#mondai').show()
+            $('span#mam').text(mam)
+            $('span#chil').text(chil)
+            $('span#percent').text(0)
+            $('span#nakami').css('width', 0)
             shutudai()
         })
 
@@ -415,6 +444,11 @@
                         return (currentValue || 0) + 1
                     })
             }
+            chil ++
+            $('span#chil').text(chil)
+            percent = chil / mam
+            $('span#percent').text(Math.floor(percent * 100))
+            $('span#nakami').css('width', percent * 1000)
             shutudai();  // 次の問題を出題
         });
     </script>
