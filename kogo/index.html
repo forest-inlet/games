@@ -13,7 +13,7 @@
         input[type="number"]{
             width: 50px;
         }
-        div#windowLogin, div#windowTouroku, div#mondai, div#account, div#withGoogleTouroku, div#kekka, div#update{
+        div#windowLogin, div#windowTouroku, div#mondai, div#account, div#withGoogleTouroku, div#kekka, div#update, button#next, div#kirokuItiran{
             display: none;
         }
         div#update{
@@ -36,6 +36,22 @@
             margin: 1px;
             transition: width 1s ease-in-out;
         }
+        #tabs button {
+    padding: 10px;
+    margin: 5px;
+    border: none;
+    background-color: #dddddd;
+    cursor: pointer;
+}
+
+#tabs button.active {
+    background-color: #bbbbbb;
+}
+
+.recordContent {
+    margin-top: 20px;
+}
+
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
@@ -125,9 +141,22 @@
         </div>
         <div id="account">
             ユーザー名：<span id="name"></span>
+            <button id="kiroku">学習記録</button>
             <button id="logout">ログアウト</button>
         </div>
     </div>
+    <div id="kirokuItiran">
+        <button id="back">戻る</button>
+        <br>
+        <div id="tabs">
+            <button id="allTab">全期間</button>
+        </div>
+        <div id="kirokuContent">
+            <div id="dayContent" class="recordContent"></div>
+            <div id="weekContent" class="recordContent" style="display:none;"></div>
+            <div id="allContent" class="recordContent" style="display:none;"></div>
+        </div>
+    </div>    
     <div id="mondai">
         <div id="shintyoku">
             <span id="sotowaku">
@@ -136,12 +165,12 @@
             <span id="percent"></span>% (<span id="chil"></span>/<span id="mam"></span>)
         </div>
         <div id="toi"></div>
-        <div id="sentaku1"></div>
-        <div id="sentaku2"></div>
-        <div id="sentaku3"></div>
         <button id="1"></button>
         <button id="2"></button>
         <button id="3"></button>
+        <br>
+        <span id="answer"></span>
+        <button id="next">次へ</button>
     </div>
     <div id="kekka">
         <span id="seitou"></span>/<span id="all"></span>問正解でした
@@ -151,7 +180,7 @@
     <script>
         let name, v
         let uid = null
-        let version = 1
+        let version = 2
 
         //firebaseの設定
         const firebaseConfig = {
@@ -324,7 +353,12 @@
             window.location.reload()
         })
 
-        let mode, type, kaisuu, shutudaizumi, toi, kai, correctAnswer, seitou, toiNumber, percent, chil, mam
+        let mode, type, kaisuu, toi, kai, correctAnswer, seitou, toiNumber, percent, chil, mam, answerNum
+        let shutudaizumi = []
+        const kijun = new Date('2024-11-01')
+        const now = new Date()
+        const diff = now.getTime() - kijun.getTime()
+        const date = Math.floor(diff / (1000 * 60 * 60 * 24))
 
         $('input#randomX').on('change', function() {
             if ($(this).is(':checked')) {
@@ -375,6 +409,9 @@
         })
 
         function shutudai() {
+            $('button#next').hide()
+            $('button').css('background-color', '#f0f0f0')
+            $('span#answer').text('')
             if (shutudaizumi.length >= kaisuu) {
                 $('div#mondai').hide()
                 $('div#kekka').show()
@@ -411,16 +448,20 @@
             $('button#1').text(sentaku[0]);
             $('button#2').text(sentaku[1]);
             $('button#3').text(sentaku[2]);
+            answerNum = sentaku.indexOf(correctAnswer) + 1
             }
 
             // 正解か不正解かの判定
             $('button#1, button#2, button#3').on('click', async function() {
                 let selectedAnswer = $(this).text();  // 選択したボタンのテキストを取得
                 if (selectedAnswer === correctAnswer) {
-                    alert("正解です！");
+                    $('span#answer').text('正解です!')
+                    $(this).css('background-color', 'green')
                     seitou ++
                 } else {
-                alert("不正解です。正解は「" + correctAnswer + "」です。");
+                $('span#answer').text("不正解です。正解は「" + correctAnswer + "」です。");
+                $(this).css('background-color', 'red')
+                $(`button#${answerNum}`).css('background-color', 'green')
                 if (uid !== null && uid !== undefined) {
                     let to
                     if (toi == 0) {
@@ -428,7 +469,7 @@
                     } else {
                         to = 'toKogo'
                     }
-                    await database.ref(`users/${uid}/kogo/${to}/${data[toiNumber][0]}/miss`).transaction((currentValue) => {
+                    await database.ref(`users/${uid}/kogo/${to}/${data[toiNumber][0]}/${date}/miss`).transaction((currentValue) => {
                         return (currentValue || 0) + 1
                     })
             }
@@ -440,7 +481,7 @@
                     } else {
                         to = 'toKogo'
                     }
-                    await database.ref(`users/${uid}/kogo/${to}/${data[toiNumber][0]}/all`).transaction((currentValue) => {
+                    await database.ref(`users/${uid}/kogo/${to}/${data[toiNumber][0]}/${date}/all`).transaction((currentValue) => {
                         return (currentValue || 0) + 1
                     })
             }
@@ -449,8 +490,86 @@
             percent = chil / mam
             $('span#percent').text(Math.floor(percent * 100))
             $('span#nakami').css('width', percent * 1000)
-            shutudai();  // 次の問題を出題
+            $('button#next').show()
         });
+
+        $('button#next').on('click', shutudai)
+
+        // ボタン#kirokuがクリックされたときの処理
+$('button#kiroku').on('click', async function() {
+    $('div#settei').hide()
+    $('div#kirokuItiran').show()
+    $('div#mondai').hide()
+    $('div#account').hide()
+    loadRecord('all') // 初期表示は「本日」
+})
+
+// タブ切り替えイベント
+$('#dayTab').on('click', function() { changeTab('day') })
+$('#weekTab').on('click', function() { changeTab('week') })
+$('#allTab').on('click', function() { changeTab('all') })
+
+function changeTab(tab) {
+    $('#tabs button').removeClass('active')
+    $(`#${tab}Tab`).addClass('active')
+    $('.recordContent').hide()
+    $(`#${tab}Content`).show()
+    loadRecord(tab)
+}
+
+// 記録をFirebaseから取得して表示する関数
+async function loadRecord(tab) {
+    let startDate, endDate
+    const today = new Date()
+    const userId = uid
+
+    // タブに応じた期間を設定
+    if (tab === 'day') {
+        startDate = new Date(today.setHours(0, 0, 0, 0)).getTime() // 今日
+    } else if (tab === 'week') {
+        endDate = today.getTime() // 今日まで
+        startDate = new Date(today.setDate(today.getDate() - 7)).getTime() // 一週間前
+    } else {
+        startDate = 0 // 全期間
+    }
+
+    const refPath = `users/${userId}/kogo/`
+
+    let recordHTML = ''
+
+    for (const mode of ['toKogo', 'toImi']) {
+        recordHTML += `<h3>${mode === 'toKogo' ? '意味→古語' : '古語→意味'}</h3>`
+        const snapshot = await database.ref(refPath + mode).once('value')
+
+        snapshot.forEach((data) => {
+            const records = data.val()
+            let count = 0, mistakes = 0
+
+            // 日別または週別でデータをフィルタリング
+            for (const dateKey in records) {
+                const date = new Date(parseInt(dateKey) * 86400000) // 日付を計算
+                const dateMillis = date.getTime()
+
+                if ((tab === 'all') || 
+                    (tab === 'day' && dateMillis >= startDate) || 
+                    (tab === 'week' && dateMillis >= startDate && dateMillis <= endDate)) {
+                    
+                    mistakes += records[dateKey].miss || 0
+                    count += records[dateKey].all || 0
+                }
+            }
+            recordHTML += `<p>${data.key}: ${mistakes}回間違え / ${count}回出題</p>`
+        })
+    }
+
+    $(`#${tab}Content`).html(recordHTML)
+}
+
+$('button#back').on('click', function() {
+    $('div#kirokuItiran').hide()
+    $('div#settei').show()
+    $('div#account').show()
+})
     </script>
 </body>
 </html>
