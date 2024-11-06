@@ -354,6 +354,7 @@
         })
 
         let mode, type, kaisuu, toi, kai, correctAnswer, seitou, toiNumber, percent, chil, mam, answerNum
+        let canAnswer = true
         let shutudaizumi = []
         const kijun = new Date('2024-11-01')
         const now = new Date()
@@ -449,19 +450,22 @@
             $('button#2').text(sentaku[1]);
             $('button#3').text(sentaku[2]);
             answerNum = sentaku.indexOf(correctAnswer) + 1
+            canAnswer = true
             }
 
             // 正解か不正解かの判定
             $('button#1, button#2, button#3').on('click', async function() {
+                if (canAnswer) {
+                canAnswer = false
                 let selectedAnswer = $(this).text();  // 選択したボタンのテキストを取得
                 if (selectedAnswer === correctAnswer) {
                     $('span#answer').text('正解です!')
-                    $(this).css('background-color', 'green')
+                    $(this).css('background-color', '#50ff50')
                     seitou ++
                 } else {
                 $('span#answer').text("不正解です。正解は「" + correctAnswer + "」です。");
                 $(this).css('background-color', 'red')
-                $(`button#${answerNum}`).css('background-color', 'green')
+                $(`button#${answerNum}`).css('background-color', '#50ff50')
                 if (uid !== null && uid !== undefined) {
                     let to
                     if (toi == 0) {
@@ -491,6 +495,7 @@
             $('span#percent').text(Math.floor(percent * 100))
             $('span#nakami').css('width', percent * 1000)
             $('button#next').show()
+        }
         });
 
         $('button#next').on('click', shutudai)
