@@ -11,6 +11,7 @@
             padding: 0;
         }
 
+        /* AppBar's style */
         .appbar {
             position: fixed;
             top: 0;
@@ -44,13 +45,34 @@
             transition: background-color 0.3s ease-in-out;
             border-radius: 4px;
         }
+
         .appbar_button:hover {
             background-color: rgba(0, 0, 0, 0.2);
         }
 
+        /* content's style */
         .content {
             padding-top: 70px;
             /* AppBarの高さ分 */
+        }
+
+        /* name_input's style */
+        #name_input {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: calc(100vh - 70px);
+            /* AppBarの高さ分 */
+        }
+
+        #name_input_body {
+            scale: 1.5;
+        }
+
+        #error_message {
+            color: red;
+            visibility: hidden;
         }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -64,7 +86,14 @@
     </header>
 
     <div class="content">
-
+        <div id="name_input">
+            <div id="name_input_body">
+                <p>名前を入力してください:</p>
+                <input type="text" id="name" placeholder="名前">
+                <button id="set_name">決定</button>
+                <p id="error_message">名前は必須です</p>
+            </div>
+        </div>
     </div>
 </body>
 
