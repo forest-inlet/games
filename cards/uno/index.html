@@ -74,6 +74,34 @@
             color: red;
             visibility: hidden;
         }
+
+
+        /* home's style */
+        #home {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: calc(100vh - 70px);
+            /* AppBarの高さ分 */
+        }
+
+        #home * :not(tbody *) {
+            width: 100%;
+        }
+
+        #home_body {
+            padding-top: 10px;
+            width: 50%;
+            scale: 1.5;
+        }
+
+        #home th {
+            width: 40%;
+        }
+
+        #room_table * {
+            text-align: center;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
@@ -86,12 +114,74 @@
     </header>
 
     <div class="content">
+
         <div id="name_input">
             <div id="name_input_body">
                 <p>名前を入力してください:</p>
                 <input type="text" id="name" placeholder="名前">
                 <button id="set_name">決定</button>
                 <p id="error_message">名前は必須です</p>
+            </div>
+        </div>
+        <script>
+            $('#set_name').on('click', () => {
+                let name = $('#name').val() ?? ''
+                console.log(name)
+                if (name === '') {
+                    $('#error_message').css('visibility', 'visible')
+                } else {
+                    $('#name_input').hide()
+                    $('#home').show()
+                }
+            })
+        </script>
+
+        <div id="home" style="display: none;">
+            <div id="home_body">
+                <div id="room_list">
+                    <table cellspacing="0" border="1" id="room_table">
+                        <thead>
+                            <tr>
+                                <th>ルーム名</th>
+                                <th>人数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><button class="join" value="room1">詳細</button>room1</td>
+                                <td>3/4</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="room" style="display: none;">
+            <div id="room_body">
+                <h2 id="room_name">ルーム名</h2>
+                <p>メンバー</p>
+                <span id="members"></span>
+                <hr>
+                <button id="join">参加</button>
+            </div>
+        </div>
+
+        <div id="game" style="display: none;">
+            <div id="game_body">
+                <span id="members_list">
+                    <span>
+                        <span></span>
+                    </span>
+                </span>
+                <span id="game_table">
+                    <span id="table">
+
+                    </span>
+                    <span id="my_cards">
+
+                    </span>
+                </span>
             </div>
         </div>
     </div>
