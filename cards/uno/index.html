@@ -11,6 +11,10 @@
             padding: 0;
         }
 
+        body {
+            overflow: hidden;
+        }
+
         /* AppBar's style */
         .appbar {
             position: fixed;
@@ -102,6 +106,131 @@
         #room_table * {
             text-align: center;
         }
+
+        /* create_room's style */
+        #create_room {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: calc(100vh - 70px);
+            /* AppBarの高さ分 */
+        }
+
+        #create_room_body {
+            display: flex;
+            scale: 1.5;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* room's style */
+        #room {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: calc(100vh - 70px);
+            /* AppBarの高さ分 */
+        }
+
+        #room_body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            scale: 1.5;
+        }
+
+        /* game's style */
+        #game {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: calc(100vh - 70px);
+            /* AppBarの高さ分 */
+        }
+
+        #game_body {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: row;
+            align-content: center;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        #members_list {
+            display: inline-block;
+            width: 29%;
+        }
+
+        .member {
+            display: inline-flex;
+            flex-direction: column;
+            width: 40%;
+            margin: 0.5%;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: rgba(33, 150, 243, 0.1);
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .member_name {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .member_cards {
+            font-size: 16px;
+            background-color: rgb(255, 255, 255);
+            padding: 5px;
+            border-radius: 5px;
+            color: gray;
+        }
+
+        #game_table {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            width: 69%;
+            height: calc(100vh - 70px);
+        }
+
+        #open_cards {
+            margin: 10px
+        }
+
+        #deck {
+            position: absolute;
+            top: 75px;
+            left: 30%;
+            cursor: pointer;
+        }
+
+        #my_cards {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            background-color: rgba(187, 255, 223, 0.8);
+            height: 20%;
+            width: 100%;
+        }
+
+        #my_cards img {
+            width: auto;
+            height: 90%;
+            margin: 0 5px;
+            cursor: pointer;
+            border: 1px solid;
+            border-radius: 5px;
+            border-color: rgba(187, 255, 223, 0.8);
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
@@ -123,18 +252,6 @@
                 <p id="error_message">名前は必須です</p>
             </div>
         </div>
-        <script>
-            $('#set_name').on('click', () => {
-                let name = $('#name').val() ?? ''
-                console.log(name)
-                if (name === '') {
-                    $('#error_message').css('visibility', 'visible')
-                } else {
-                    $('#name_input').hide()
-                    $('#home').show()
-                }
-            })
-        </script>
 
         <div id="home" style="display: none;">
             <div id="home_body">
@@ -147,13 +264,18 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td><button class="join" value="room1">詳細</button>room1</td>
-                                <td>3/4</td>
-                            </tr>
                         </tbody>
                     </table>
+                    <button id="create_room_button">ルームを作成</button>
                 </div>
+            </div>
+        </div>
+
+        <div id="create_room" style="display: none;">
+            <div id="create_room_body">
+                <h2>ルームを作成</h2>
+                <input type="text" id="room_name_input" placeholder="ルーム名">
+                <button id="create">作成</button>
             </div>
         </div>
 
@@ -166,30 +288,171 @@
                 <button id="join">参加</button>
             </div>
         </div>
+        <script>
+
+            $('#join').on('click', () => {
+                $('#room').hide()
+                $('#game').show()
+            })
+        </script>
 
         <div id="game" style="display: none;">
             <div id="game_body">
                 <div id="members_list">
-                    <span>
-                        <span></span>
-                    </span>
+                    <div>
+                        <span class="member">
+                            <div class="member_name">あなた</div>
+                            <div class="member_cards">0</div>
+                        </span>
+                        <span class="member">
+                            <div class="member_name">あなた</div>
+                            <div class="member_cards">0</div>
+                        </span>
+                    </div>
                 </div>
                 <div id="game_table">
                     <div id="table">
                         <div id="open_cards">
-
+                            <img src="cards/red0.svg" alt="赤の0">
                         </div>
                         <div id="deck">
                             <img src="cards/back.svg" alt="山札">
                         </div>
                     </div>
                     <div id="my_cards">
-                        
+                        <img src="cards/red1.svg" alt="赤の1">
+                        <img src="cards/blue2.svg" alt="青の2">
+                        <img src="cards/yellow3.svg" alt="黄の3">
+                        <img src="cards/green4.svg" alt="緑の4">
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+        import { getDatabase, ref as getRef, get, set, update, onChildAdded, onChildChanged, onValue } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIuGBHjK19oZ4fxwjrNp9-1-mk7ZGHhSQ",
+            authDomain: "uno-e87c1.firebaseapp.com",
+            databaseURL: "https://uno-e87c1-default-rtdb.firebaseio.com",
+            projectId: "uno-e87c1",
+            storageBucket: "uno-e87c1.firebasestorage.app",
+            messagingSenderId: "485460551564",
+            appId: "1:485460551564:web:f06f407ec2acbaba3fd8a9"
+        }
+        const app = initializeApp(firebaseConfig)
+        const database = getDatabase(app)
+        const conectedRef = getRef(database, '.info/connected')
+        onValue(conectedRef, (snapshot) => {
+            if (snapshot.val() === true) {
+                console.log('Connected to Firebase Realtime Database')
+            } else {
+                console.log('Not connected to Firebase Realtime Database')
+            }
+        })
+
+        let name = ''
+        let joinedRoom = ''
+
+        $('#set_name').on('click', () => {
+            name = $('#name').val() ?? ''
+            if (name === '') {
+                $('#error_message').css('visibility', 'visible')
+            } else {
+                $('#name_input').hide()
+                $('#home').show()
+            }
+        })
+
+        onChildAdded(getRef(database, 'rooms'), (snapshot) => {
+            const roomData = snapshot.val()
+            console.log('Room key:', snapshot.key)
+            console.log('Room data:', roomData) // Clear the table before adding new data
+            if (roomData) {
+                const roomName = snapshot.key
+                const roomMembers = roomData.members ? Object.keys(roomData.members).length : 0
+                const roomRow = $('<tr></tr>')
+                    .append($('<td></td>').html(`<button class="join" value="${roomName}">詳細</button>${roomName}`))
+                    .append($('<td></td>').text(roomMembers))
+                $('#room_table tbody').append(roomRow)
+                $('.join').on('click', function () {
+                    const roomName = $(this).val()
+                    console.log(roomName)
+                    $('#home').hide()
+                    $('#room').show()
+                    $('#room_name').text(roomName)
+                    $('#members').text('メンバー: ' + name) // Display the current user's name as a member
+                    // Fetch and display members from the database
+                    get(getRef(database, `rooms/${roomName}/members`)).then(snapshot => {
+                        if (snapshot.exists()) {
+                            const members = snapshot.val().join(', ')
+                            $('#members').text('メンバー: ' + members)
+                        } else {
+                            $('#members').text('メンバー: なし')
+                        }
+                    }).catch(error => {
+                        console.error('Error fetching members:', error)
+                    })
+                })
+            }
+        })
+        onChildChanged(getRef(database, 'rooms'), snapshot => {
+            const roomData = snapshot.val()
+            $('#room_table tbody').empty() // Clear the table before adding new data
+            if (roomData) {
+                const roomName = snapshot.key
+                const roomMembers = roomData.members ? Object.keys(roomData.members).length : 0
+                const roomRow = $('<tr></tr>')
+                    .append($('<td></td>').html(`<button class="join" value="${roomName}">詳細</button>${roomName}`))
+                    .append($('<td></td>').text(roomMembers))
+                $('#room_table tbody').append(roomRow)
+                $('.join').on('click', function () {
+                    const roomName = $(this).val()
+                    console.log(roomName)
+                    $('#home').hide()
+                    $('#room').show()
+                    $('#room_name').text(roomName)
+                    $('#members').text('メンバー: ' + name) // Display the current user's name as a member
+                    // Fetch and display members from the database
+                    get(getRef(database, `rooms/${roomName}/members`)).then(snapshot => {
+                        if (snapshot.exists()) {
+                            const members = snapshot.val().join(', ')
+                            $('#members').text('メンバー: ' + members)
+                        } else {
+                            $('#members').text('メンバー: なし')
+                        }
+                    }).catch(error => {
+                        console.error('Error fetching members:', error)
+                    })
+                })
+            }
+        })
+
+        $('#create_room_button').on('click', () => {
+            $('#home').hide()
+            $('#create_room').show()
+        })
+
+        $('#create').on('click', () => {
+            const roomName = $('#room_name_input').val() ?? ''
+            if (roomName === '') {
+                alert('ルーム名は必須です')
+                return
+            }
+            set(getRef(database, `rooms/${roomName}`), {
+                members: [name]
+            }).then(() => {
+                $('#create_room').hide()
+                $('#home').show()
+                $('#room_name_input').val('') // Clear the input field
+            }).catch(error => {
+                console.error('Error creating room:', error)
+            })
+        })
+    </script>
 </body>
 
 </html>
