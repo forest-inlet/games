@@ -74,7 +74,8 @@
             scale: 1.5;
         }
 
-        #error_message {
+        #error_message_none_name,
+        #error_message_used_name {
             color: red;
             visibility: hidden;
         }
@@ -203,7 +204,16 @@
         }
 
         #open_cards {
-            margin: 10px
+            display: flex;
+            margin: 10px;
+            width: 80%;
+            align-content: end;
+            justify-content: center;
+        }
+
+        #open_cards img {
+            width: 75%;
+            height: auto;
         }
 
         #deck {
@@ -211,6 +221,11 @@
             top: 75px;
             left: 30%;
             cursor: pointer;
+        }
+
+        #deck img {
+            width: 100px;
+            height: auto;
         }
 
         #my_cards {
@@ -237,9 +252,9 @@
 
 <body>
     <header class="appbar">
-        <button class="appbar_button">←</button>
+        <button id="back" class="appbar_button" style="visibility: hidden;">←</button>
         <div class="appbar_title">UNO</div>
-        <button class="appbar_button">≡</button>
+        <button class="appbar_button" style="visibility: hidden;">≡</button>
     </header>
 
     <div class="content">
@@ -249,7 +264,8 @@
                 <p>名前を入力してください:</p>
                 <input type="text" id="name" placeholder="名前">
                 <button id="set_name">決定</button>
-                <p id="error_message">名前は必須です</p>
+                <p id="error_message_none_name">名前は必須です</p>
+                <p id="error_message_used_name">この名前はすでに使用されています</p>
             </div>
         </div>
 
@@ -286,15 +302,11 @@
                 <span id="members"></span>
                 <hr>
                 <button id="join">参加</button>
+                <button id="leave" style="display: none;">退出</button>
+                <button id="start_game" style="display: none;">ゲーム開始</button>
+                <button id="remove_room" style="display: none;">ルーム削除</button>
             </div>
         </div>
-        <script>
-
-            $('#join').on('click', () => {
-                $('#room').hide()
-                $('#game').show()
-            })
-        </script>
 
         <div id="game" style="display: none;">
             <div id="game_body">
@@ -332,7 +344,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-        import { getDatabase, ref as getRef, get, set, update, onChildAdded, onChildChanged, onValue } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+        import { getDatabase, ref as getRef, get, set, update, push, remove, onChildAdded, onChildChanged, onChildRemoved, off, onValue, onDisconnect } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAIuGBHjK19oZ4fxwjrNp9-1-mk7ZGHhSQ",
@@ -356,14 +368,45 @@
 
         let name = ''
         let joinedRoom = ''
+        let createdRoom = ''
+        let members = {}
+        let memberCards = {}
+
+        const cardsList = [
+            'red0', 'red1', 'red2', 'red3', 'red4', 'red5', 'red6', 'red7', 'red8', 'red9', 'redskip', 'redreverse', 'reddraw2',
+            'blue0', 'blue1', 'blue2', 'blue3', 'blue4', 'blue5', 'blue6', 'blue7', 'blue8', 'blue9', 'blueskip', 'bluereverse', 'bluedraw2',
+            'yellow0', 'yellow1', 'yellow2', 'yellow3', 'yellow4', 'yellow5', 'yellow6', 'yellow7', 'yellow8', 'yellow9', 'yellowskip', 'yellowreverse', 'yellowdraw2',
+            'green0', 'green1', 'green2', 'green3', 'green4', 'green5', 'green6', 'green7', 'green8', 'green9', 'greenskip', 'greenreverse', 'greendraw2',
+            'red0', 'red1', 'red2', 'red3', 'red4', 'red5', 'red6', 'red7', 'red8', 'red9', 'redskip', 'redreverse', 'reddraw2',
+            'blue0', 'blue1', 'blue2', 'blue3', 'blue4', 'blue5', 'blue6', 'blue7', 'blue8', 'blue9', 'blueskip', 'bluereverse', 'bluedraw2',
+            'yellow0', 'yellow1', 'yellow2', 'yellow3', 'yellow4', 'yellow5', 'yellow6', 'yellow7', 'yellow8', 'yellow9', 'yellowskip', 'yellowreverse', 'yellowdraw2',
+            'green0', 'green1', 'green2', 'green3', 'green4', 'green5', 'green6', 'green7', 'green8', 'green9', 'greenskip', 'greenreverse', 'greendraw2',
+            'wild', 'wilddraw4', 'wild', 'wilddraw4', 'wild', 'wilddraw4', 'wild', 'wilddraw4'
+        ]
 
         $('#set_name').on('click', () => {
-            name = $('#name').val() ?? ''
+            name = $('#name').val().trim() ?? ''
             if (name === '') {
-                $('#error_message').css('visibility', 'visible')
+                $('#error_message_none_name').css('visibility', 'visible')
             } else {
-                $('#name_input').hide()
-                $('#home').show()
+                get(getRef(database, 'users/' + name)).then(snapshot => {
+                    if (snapshot.exists()) {
+                        $('#error_message_used_name').css('visibility', 'visible')
+                    } else {
+                        set(getRef(database, 'users/' + name), {
+                            name: name
+                        }).then(() => {
+                            console.log('User created:', name)
+                            onDisconnect(getRef(database, `users/${name}`)).remove()
+                        }).catch(error => {
+                            console.error('Error creating user:', error)
+                        })
+                        $('#name_input').hide()
+                        $('#home').show()
+                    }
+                }).catch(error => {
+                    console.error('Error checking user existence:', error)
+                })
             }
         })
 
@@ -371,10 +414,10 @@
             const roomData = snapshot.val()
             console.log('Room key:', snapshot.key)
             console.log('Room data:', roomData) // Clear the table before adding new data
-            if (roomData) {
+            if (roomData && roomData.status === 'ready') {
                 const roomName = snapshot.key
                 const roomMembers = roomData.members ? Object.keys(roomData.members).length : 0
-                const roomRow = $('<tr></tr>')
+                const roomRow = $(`<tr class="${roomName}"></tr>`)
                     .append($('<td></td>').html(`<button class="join" value="${roomName}">詳細</button>${roomName}`))
                     .append($('<td></td>').text(roomMembers))
                 $('#room_table tbody').append(roomRow)
@@ -401,33 +444,25 @@
         })
         onChildChanged(getRef(database, 'rooms'), snapshot => {
             const roomData = snapshot.val()
-            $('#room_table tbody').empty() // Clear the table before adding new data
-            if (roomData) {
-                const roomName = snapshot.key
-                const roomMembers = roomData.members ? Object.keys(roomData.members).length : 0
-                const roomRow = $('<tr></tr>')
-                    .append($('<td></td>').html(`<button class="join" value="${roomName}">詳細</button>${roomName}`))
-                    .append($('<td></td>').text(roomMembers))
-                $('#room_table tbody').append(roomRow)
-                $('.join').on('click', function () {
-                    const roomName = $(this).val()
-                    console.log(roomName)
-                    $('#home').hide()
-                    $('#room').show()
-                    $('#room_name').text(roomName)
-                    $('#members').text('メンバー: ' + name) // Display the current user's name as a member
-                    // Fetch and display members from the database
-                    get(getRef(database, `rooms/${roomName}/members`)).then(snapshot => {
-                        if (snapshot.exists()) {
-                            const members = snapshot.val().join(', ')
-                            $('#members').text('メンバー: ' + members)
-                        } else {
-                            $('#members').text('メンバー: なし')
-                        }
-                    }).catch(error => {
-                        console.error('Error fetching members:', error)
-                    })
-                })
+            $(`tr.${snapshot.key} td:nth-child(2)`).text(Object.keys(roomData.members).length)
+            if (snapshot.key === $('#room_name').text()) {
+                $('#members').text('メンバー: ' + Object.keys(roomData.members).join(', '))
+            }
+            if (snapshot.key === joinedRoom) {
+                members = roomData.members || {}
+            }
+            if (roomData.status === 'started') {
+                $(`tr.${snapshot.key}`).remove()
+            }
+        })
+        onChildRemoved(getRef(database, 'rooms'), snapshot => {
+            $(`tr.${snapshot.key}`).remove()
+            if (snapshot.key === $('#room_name').text()) {
+                $('#room').hide()
+                $('#home').show()
+                $('#room_name').text('')
+                $('#members').text('')
+                joinedRoom = ''
             }
         })
 
@@ -441,17 +476,188 @@
             if (roomName === '') {
                 alert('ルーム名は必須です')
                 return
+            }// Check if the room already exists
+            get(getRef(database, `rooms/${roomName}`)).then(snapshot => {
+                if (snapshot.exists()) {
+                    alert('このルーム名はすでに使用されています')
+                    return
+                }
+            }).catch(error => {
+                console.error('Error checking room existence:', error)
+            })
+            if (/[\s"'\u3000]/g.test(roomName)) {
+                alert('ルーム名には半角スペース、全角スペース、"、\'は使用できません')
+                return
             }
-            set(getRef(database, `rooms/${roomName}`), {
-                members: [name]
+            set(getRef(database, `rooms/${roomName}/members`), {
+                [name]: true
             }).then(() => {
                 $('#create_room').hide()
-                $('#home').show()
+                $('#room').show()
+                $('#room_name').text(roomName)
+                $('#members').text(name) // Display the current user's name as a member
+                $('#join').hide() // Hide the join button since the user is already in the room
+                joinedRoom = roomName // Store the joined room name
+                $('#start_game').show() // Show the start game button
+                $('#remove_room').show() // Show the remove room button
                 $('#room_name_input').val('') // Clear the input field
+                createdRoom = roomName // Store the created room name
+                console.log('Room created:', roomName)
+                update(getRef(database, `rooms/${roomName}`), {
+                    commands: 'created'
+                })
+                set(getRef(database, `rooms/${roomName}/status`), 'ready')
+                onDisconnect(getRef(database, `rooms/${createdRoom}`)).remove()
+                onChildChanged(getRef(database, `rooms/${roomName}/commands`), (commandSnapshot) => {
+                    const commandData = commandSnapshot.val()
+                    console.log('Command added:', commandData)
+                    // Handle the command data as needed
+                    $('#room').hide()
+                    $('#game').show()
+                    $('#game_table').empty() // Clear the game table
+                    $('#members_list').empty() // Clear the members list
+                    // Fetch and display members in the game
+                })
+                get(getRef(database, `rooms/${roomName}/members`)).then(snapshot => {
+                    members = snapshot.val() || {}
+                }).catch(error => {
+                    console.error('Error fetching members:', error)
+                })
             }).catch(error => {
                 console.error('Error creating room:', error)
             })
         })
+
+        $('#join').on('click', () => {
+            const roomName = $('#room_name').text()
+            if (roomName === '') {
+                alert('ルーム名が設定されていません')
+                return
+            }
+            $('#join').hide() // Hide the join button since the user is already in the room
+            $('#leave').show() // Show the leave button
+            // Add the user to the room's members
+            update(getRef(database, `rooms/${roomName}/members`), {
+                [name]: true
+            }).then(() => {
+                console.log('User joined room:', roomName)
+                onDisconnect(getRef(database, `rooms/${joinedRoom}/members/${name}`)).remove()
+                onChildChanged(getRef(database, `rooms/${roomName}/commands`), (commandSnapshot) => {
+                    const commandData = commandSnapshot.val()
+
+                    console.log('Command added:', commandData)
+                    // Handle the command data as needed
+                    $('#room').hide()
+                    $('#game').show()
+                    $('#game_table').empty() // Clear the game table
+                    $('#members_list').empty() // Clear the members list
+                    // Fetch and display members in the game
+                })
+            }).catch(error => {
+                console.error('Error joining room:', error)
+            })
+            get(getRef(database, `rooms/${roomName}`)).then(snapshot => {
+                members = snapshot.val().members || {}
+            })
+        })
+
+        $('#leave').on('click', () => {
+            const roomName = $('#room_name').text()
+            if (roomName === '') {
+                alert('ルーム名が設定されていません')
+                return
+            }
+            // Remove the user from the room's members
+            remove(getRef(database, `rooms/${roomName}/members/${name}`)).then(() => {
+                console.log('User left room:', roomName)
+                $('#leave').hide() // Hide the leave button
+                $('#join').show() // Show the join button
+                onDisconnect(getRef(database, `rooms/${joinedRoom}/members/${name}`)).cancel()
+                off(getRef(database, `rooms/${roomName}/commands`)) // Stop listening for commands
+                joinedRoom = ''
+                members = {}
+            }).catch(error => {
+                console.error('Error leaving room:', error)
+            })
+        })
+
+        $('#start_game').on('click', () => {
+            const roomName = $('#room_name').text()
+            if (roomName === '') {
+                alert('ルーム名が設定されていません')
+                return
+            }
+            let membersCount = Object.keys(members).length
+            if (membersCount < 2 || membersCount > 16) {
+                alert('2人以上、16人以下のメンバーが必要です')
+                return
+            }
+            // Send a command to start the game
+            push(getRef(database, `rooms/${roomName}/commands`), {
+                type: 'start_game',
+                timestamp: Date.now()
+            }).then(() => {
+                console.log('Game started in room:', roomName)
+                set(getRef(database, `rooms/${roomName}/status`), 'started')
+                let usedCards = []
+                let names = Object.keys(members)
+                for (let name of names) {
+                    for (let i = 0; i < 7; i++) {
+                        let card
+                        let canUse = false
+                        do {
+                            card = cardsList[Math.floor(Math.random() * cardsList.length)]
+                            if (card.startsWith('wild')) {
+                                canUse = !hasMultipleOccurrencesFast(usedCards, card, 4)
+                            } else {
+                                canUse = !hasMultipleOccurrencesFast(usedCards, card, 2)
+                            }
+                        } while (!canUse)
+                        usedCards.push(card)
+                        update(getRef(database, `rooms/${roomName}/members/${name}/cards`), {
+                            [i]: card
+                        })
+                        memberCards[name] = memberCards[name] || []
+                        memberCards[name].push(card)
+                        console.log(`Assigned card ${card} to ${name}`)
+                    }
+                }
+                console.log('Used cards:', memberCards)
+            }).catch(error => {
+                console.error('Error starting game:', error)
+            })
+        })
+
+        $('#remove_room').on('click', () => {
+            const roomName = $('#room_name').text()
+            if (roomName === '') {
+                alert('ルーム名が設定されていません')
+                return
+            }
+            onDisconnect(getRef(database, `rooms/${createdRoom}`)).cancel()
+            // Remove the room from the database
+            remove(getRef(database, `rooms/${roomName}`)).then(() => {
+                console.log('Room removed:', roomName)
+                $('#room').hide()
+                $('#home').show()
+                $('#room_name').text('')
+                $('#members').text('')
+                off(getRef(database, `rooms/${roomName}/commands`)) // Stop listening for commands
+                joinedRoom = ''
+                members = {}
+            }).catch(error => {
+                console.error('Error removing room:', error)
+            })
+        })
+
+        function hasMultipleOccurrencesFast(array, value, minCount = 2) {
+            let count = 0;
+            for (let item of array) {
+                if (item === value) count++;
+                if (count >= minCount) return true;
+            }
+            return false;
+        }
     </script>
 </body>
 
