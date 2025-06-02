@@ -305,6 +305,7 @@
                 <button id="leave" style="display: none;">退出</button>
                 <button id="start_game" style="display: none;">ゲーム開始</button>
                 <button id="remove_room" style="display: none;">ルーム削除</button>
+                <button id="open_game">ゲームを開く</button>
             </div>
         </div>
 
@@ -511,12 +512,16 @@
                 onChildChanged(getRef(database, `rooms/${roomName}/commands`), (commandSnapshot) => {
                     const commandData = commandSnapshot.val()
                     console.log('Command added:', commandData)
-                    // Handle the command data as needed
-                    $('#room').hide()
-                    $('#game').show()
-                    $('#game_table').empty() // Clear the game table
-                    $('#members_list').empty() // Clear the members list
-                    // Fetch and display members in the game
+                    if (commandData['cards']) {
+                        console.log('Member cards:', commandData['cards'])
+
+                        // Handle the command data as needed
+                        $('#room').hide()
+                        $('#game').show()
+                        $('#game_table').empty() // Clear the game table
+                        $('#members_list').empty() // Clear the members list
+                        // Fetch and display members in the game
+                    }
                 })
                 get(getRef(database, `rooms/${roomName}/members`)).then(snapshot => {
                     members = snapshot.val() || {}
@@ -542,16 +547,20 @@
             }).then(() => {
                 console.log('User joined room:', roomName)
                 onDisconnect(getRef(database, `rooms/${joinedRoom}/members/${name}`)).remove()
-                onChildChanged(getRef(database, `rooms/${roomName}/commands`), (commandSnapshot) => {
+                onChildChanged(getRef(database, `rooms/${roomName}/members`), (commandSnapshot) => {
                     const commandData = commandSnapshot.val()
 
                     console.log('Command added:', commandData)
-                    // Handle the command data as needed
-                    $('#room').hide()
-                    $('#game').show()
-                    $('#game_table').empty() // Clear the game table
-                    $('#members_list').empty() // Clear the members list
-                    // Fetch and display members in the game
+                    if (commandData['cards']) {
+                        console.log('Member cards:', commandData['cards'])
+
+                        // Handle the command data as needed
+                        $('#room').hide()
+                        $('#game').show()
+                        $('#game_table').empty() // Clear the game table
+                        $('#members_list').empty() // Clear the members list
+                        // Fetch and display members in the game
+                    }
                 })
             }).catch(error => {
                 console.error('Error joining room:', error)
@@ -622,6 +631,22 @@
                         console.log(`Assigned card ${card} to ${name}`)
                     }
                 }
+                // Set the open cards
+                let openCard
+                let canUse = false
+                do {
+                    openCard = cardsList[Math.floor(Math.random() * cardsList.length)]
+                    if (openCard.startsWith('wild')) { // ワイルドカードは常に使えない
+                        canUse = true
+                    } else {
+                        canUse = !hasMultipleOccurrencesFast(usedCards, openCard, 2)
+                    }
+                } while (!canUse)
+                push(getRef(database, `rooms/${roomName}/openCards`), openCard).then(() => {
+                    console.log('Open card set:', openCard)
+                }).catch(error => {
+                    console.error('Error setting open card:', error)
+                })
                 console.log('Used cards:', memberCards)
             }).catch(error => {
                 console.error('Error starting game:', error)
@@ -649,6 +674,51 @@
                 console.error('Error removing room:', error)
             })
         })
+
+        $('#open_game').on('click', () => {
+            const roomName = $('#room_name').text()
+            if (roomName === '') {
+                alert('ルーム名が設定されていません')
+                return
+            }
+            // Open the game view
+            $('#room').hide()
+            $('#game').show()
+            $('#members_list').empty() // Clear the game table
+            $('#open_cards').empty() // Clear the members list
+            // Fetch and display members in the game
+            for (let memberName in members) {
+                get(getRef(database, `rooms/${roomName}/members/${memberName}/cards`)).then(snapshot => {
+                    if (snapshot.exists()) {
+                        const cards = snapshot.val()
+                        memberCards[memberName] = Object.values(cards)
+                        console.log(`Member ${memberName} has cards:`, memberCards[memberName])
+                        displayMember(memberName, memberCards)
+                        let memberElement = $(`<span class="member"></span>`)
+                        memberElement.append(`<div class="member_name">${memberName}</div>`)
+                        memberElement.append(`<div class="member_cards">${memberCards[memberName].length}</div>`)
+                        $('#members_list').append(memberElement)
+                    } else {
+                        console.log(`No cards found for member ${memberName}`)
+                    }
+                }).catch(error => {
+                    console.error(`Error fetching cards for member ${memberName}:`, error)
+                })
+            }
+            // Display the open cards
+            get(getRef(database, `rooms/${roomName}/openCards`)).then(snapshot => {
+                const openCards = snapshot.val()
+                const objctKey = Object.keys(openCards)[0]
+                const openCard = openCards[objctKey]
+                console.log('Open cards:', openCards)
+                $('#open_cards').empty() // Clear the open cards
+                $('#open_cards').append(`<img src="cards/${openCard}.svg" alt="${openCard}">`)
+            }).catch(error => {
+                console.error('Error fetching open cards:', error)
+            })
+
+        })
+
 
         function hasMultipleOccurrencesFast(array, value, minCount = 2) {
             let count = 0;
